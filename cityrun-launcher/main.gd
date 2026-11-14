@@ -13,6 +13,7 @@ var request_node: HTTPRequest
 var request_mode := "activate"
 var pending_key := ""
 var machine_id := ""
+var request_in_progress := false
 
 func _ready() -> void:
 	_build_ui()
@@ -186,9 +187,10 @@ func _request_license(launch_after: bool) -> void:
 	if pending_key.is_empty():
 		_set_status("ВВЕДИТЕ КЛЮЧ CITY RUN", false)
 		return
-	if request_node.get_http_client_status() != HTTPClient.STATUS_DISCONNECTED:
+	if request_in_progress:
 		_set_status("ПОДОЖДИТЕ: ПРОВЕРКА УЖЕ ВЫПОЛНЯЕТСЯ", false)
 		return
+	request_in_progress = true
 	request_mode = "launch" if launch_after else "activate"
 	play_button.disabled = true
 	_set_status("ПРОВЕРЯЕМ ЛИЦЕНЗИЮ…", true)
@@ -199,6 +201,7 @@ func _request_license(launch_after: bool) -> void:
 		_set_status("НЕ УДАЛОСЬ ПОДКЛЮЧИТЬСЯ К СЕРВЕРУ (" + str(error) + ")", false)
 
 func _on_license_response(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	request_in_progress = false
 	if result != HTTPRequest.RESULT_SUCCESS:
 		_set_status("НЕТ СВЯЗИ С СЕРВЕРОМ ЛИЦЕНЗИЙ. ПРОВЕРЬТЕ ИНТЕРНЕТ.", false)
 		return
