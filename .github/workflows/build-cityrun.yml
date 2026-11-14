@@ -17,11 +17,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: source
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: npm install
+        working-directory: source
       - run: node --check server.js
+        working-directory: source
 
   windows-demo:
     runs-on: windows-latest
@@ -63,9 +67,9 @@ jobs:
           Controls: WASD, mouse, E, Esc.
           Original early prototype; not GTA V.
           '@ | Set-Content "package\CityRunDemo\READ-ME-FIRST.txt"
-          Compress-Archive -Path "package\CityRunDemo" -DestinationPath "CityRun-PC-Demo.zip" -Force
+          Compress-Archive -Path "package\CityRunDemo" -DestinationPath "source\\CityRun-PC-Demo.zip" -Force
       - uses: actions/upload-artifact@v4
         with:
           name: CityRun-PC-Demo-with-Launcher
-          path: CityRun-PC-Demo.zip
+          path: source/CityRun-PC-Demo.zip
           if-no-files-found: error
