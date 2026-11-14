@@ -1,0 +1,10 @@
+{
+  "name": "cityrun-game-portal",
+  "version": "0.1.0",
+  "private": true,
+  "description": "City Run demo launcher, checkout portal and license activation API",
+  "type": "module",
+  "scripts": {"start": "node server.js", "dev": "node --watch server.js"},
+  "engines": {"node": ">=20"},
+  "dependencies": {"express": "^4.21.2", "stripe": "^17.5.0"}
+}
