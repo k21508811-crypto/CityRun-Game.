@@ -35,12 +35,12 @@ app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '32kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/api/config', (_req, res) => res.json({ product: process.env.PRODUCT_NAME || 'City Run PC License', priceCents: Number(process.env.PRICE_CENTS || 999), currency: (process.env.CURRENCY || 'eur').toUpperCase(), paymentsReady: Boolean(stripe) }));
+app.get('/api/config', (_req, res) => res.json({ product: process.env.PRODUCT_NAME || 'City Run PC License', priceCents: Number(process.env.PRICE_CENTS || 23300), currency: (process.env.CURRENCY || 'rub').toUpperCase(), paymentsReady: Boolean(stripe) }));
 
 app.post('/api/checkout', async (_req, res) => {
   if (!stripe) return res.status(503).json({ error: 'Оплата ещё не настроена. Владелец должен добавить Stripe secret key.' });
-  const amount = Number(process.env.PRICE_CENTS || 999);
-  const currency = (process.env.CURRENCY || 'eur').toLowerCase();
+  const amount = Number(process.env.PRICE_CENTS || 23300);
+  const currency = (process.env.CURRENCY || 'rub').toLowerCase();
   if (!Number.isInteger(amount) || amount < 50) return res.status(500).json({ error: 'Неверная цена товара в конфигурации.' });
   try {
     const session = await stripe.checkout.sessions.create({
