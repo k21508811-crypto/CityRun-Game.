@@ -30,9 +30,12 @@ jobs:
   windows-demo:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          path: source
+      - name: Clone source into a Windows-safe directory
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          git clone --depth 1 "https://x-access-token:$env:GITHUB_TOKEN@github.com/${{ github.repository }}.git" source
       - name: Download Godot 4.3 and export templates
         shell: pwsh
         run: |
