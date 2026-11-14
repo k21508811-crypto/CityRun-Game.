@@ -16,7 +16,7 @@ Requires Node.js 20+ and a Stripe account.
 
 1. Copy `.env.example` to `.env` and set `BASE_URL` to the public HTTPS domain.
 2. Set `STRIPE_SECRET_KEY` to a Stripe **test** secret first; never commit `.env`.
-3. Set `PRICE_CENTS` and `CURRENCY` (example: `999` and `eur` = €9.99).
+3. Set `PRICE_CENTS` and `CURRENCY` (default: `23300` and `rub` = 233 ₽ (RUB uses two minor-unit digits in Stripe)).
 4. Configure a Stripe webhook at `https://YOUR_DOMAIN/api/stripe/webhook` for `checkout.session.completed`, then set `STRIPE_WEBHOOK_SECRET`.
 5. Run `npm install && npm start`.
 
