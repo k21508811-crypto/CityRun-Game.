@@ -36,31 +36,55 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           git clone --depth 1 "https://x-access-token:$env:GITHUB_TOKEN@github.com/${{ github.repository }}.git" source
+
       - name: Download Godot 4.3 and export templates
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           Invoke-WebRequest "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_win64.exe.zip" -OutFile godot.zip
           Expand-Archive godot.zip -DestinationPath godot
-          Invoke-WebRequest "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz" -OutFile templates.tpz
-          Expand-Archive templates.tpz -DestinationPath templates
+          Invoke-WebRequest "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz" -OutFile templates.zip
+          Expand-Archive templates.zip -DestinationPath templates
           $templateDir = "$env:APPDATA\Godot\export_templates\4.3.stable"
           New-Item -ItemType Directory -Force $templateDir | Out-Null
           Copy-Item "templates\templates\*" $templateDir -Recurse -Force
-      - name: Export game and launcher
+          Write-Host "Installed export templates:"
+          Get-ChildItem $templateDir | Select-Object Name,Length | Format-Table -AutoSize
+          if (!(Test-Path "$templateDir\windows_release_x86_64.exe")) {
+            throw "Windows export template is missing from $templateDir"
+          }
+
+      - name: Import, validate and export game and launcher
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           $godot = "$PWD\godot\Godot_v4.3-stable_win64.exe"
           New-Item -ItemType Directory -Force "source\gta5-one-mission\build" | Out-Null
           New-Item -ItemType Directory -Force "source\cityrun-launcher\build" | Out-Null
-          & $godot --headless --path "$PWD\source\gta5-one-mission" --export-release "Windows Desktop" "$PWD\source\gta5-one-mission\build\CityRun.exe"
-          if ($LASTEXITCODE -ne 0) { throw "City Run game export failed" }
-          & $godot --headless --path "$PWD\source\cityrun-launcher" --export-release "Windows Desktop" "$PWD\source\cityrun-launcher\build\CityRunLauncher.exe"
-          if ($LASTEXITCODE -ne 0) { throw "City Run launcher export failed" }
-          if (!(Test-Path "source\gta5-one-mission\build\CityRun.exe")) { throw "CityRun.exe missing" }
-          if (!(Test-Path "source\cityrun-launcher\build\CityRunLauncher.exe")) { throw "CityRunLauncher.exe missing" }
+
+          Write-Host "=== Importing City Run game project ==="
+          & $godot --headless --editor --path "$PWD\source\gta5-one-mission" --quit --verbose 2>&1 | Tee-Object "game-import.log"
+          if ($LASTEXITCODE -ne 0) { Get-Content "game-import.log"; throw "City Run game import/validation failed" }
+
+          Write-Host "=== Exporting City Run game ==="
+          & $godot --headless --path "$PWD\source\gta5-one-mission" --verbose --export-release "Windows Desktop" "$PWD\source\gta5-one-mission\build\CityRun.exe" 2>&1 | Tee-Object "game-export.log"
+          if ($LASTEXITCODE -ne 0) { Get-Content "game-export.log"; throw "City Run game export failed" }
+
+          Write-Host "=== Importing launcher project ==="
+          & $godot --headless --editor --path "$PWD\source\cityrun-launcher" --quit --verbose 2>&1 | Tee-Object "launcher-import.log"
+          if ($LASTEXITCODE -ne 0) { Get-Content "launcher-import.log"; throw "City Run launcher import/validation failed" }
+
+          Write-Host "=== Exporting launcher ==="
+          & $godot --headless --path "$PWD\source\cityrun-launcher" --verbose --export-release "Windows Desktop" "$PWD\source\cityrun-launcher\build\CityRunLauncher.exe" 2>&1 | Tee-Object "launcher-export.log"
+          if ($LASTEXITCODE -ne 0) { Get-Content "launcher-export.log"; throw "City Run launcher export failed" }
+
+          if (!(Test-Path "source\gta5-one-mission\build\CityRun.exe")) { throw "CityRun.exe missing after export" }
+          if (!(Test-Path "source\cityrun-launcher\build\CityRunLauncher.exe")) { throw "CityRunLauncher.exe missing after export" }
+
       - name: Package portable demo
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           New-Item -ItemType Directory -Force "source\package\CityRunDemo\Launcher","source\package\CityRunDemo\Game" | Out-Null
           Copy-Item "source\cityrun-launcher\build\CityRunLauncher.exe" "source\package\CityRunDemo\Launcher\"
           Copy-Item "source\gta5-one-mission\build\CityRun.exe" "source\package\CityRunDemo\Game\"
@@ -73,6 +97,7 @@ jobs:
           Original early prototype; not GTA V.
           '@ | Set-Content "source\package\CityRunDemo\READ-ME-FIRST.txt"
           Compress-Archive -Path "source\package\CityRunDemo" -DestinationPath "source\CityRun-PC-Demo.zip" -Force
+
       - uses: actions/upload-artifact@v4
         with:
           name: CityRun-PC-Demo-with-Launcher
